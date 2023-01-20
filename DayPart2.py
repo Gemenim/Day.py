@@ -10,9 +10,10 @@ class Day:
 
     root = Tk()
     root.title('Ежедненвик')
-    root.geometry('650x180')
+    root.geometry('680x160')
+    root.resizable(width=False, height=False)
 
-    weekDays = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Ежедневно')
+    weekDays = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
     EW = BooleanVar()
     EW.set(False)
     ED = BooleanVar()
@@ -93,22 +94,26 @@ class Day:
         time = self.time_text.get('1.0', 'end-1c')
         text = self.text_d.get('1.0', 'end-1c')
         if len(time) == 4:
-            if self.EW.get():
-                self.open_for_save(day, time, text, 'ew')
-                showinfo('Сохранено', 'Запись создана')
-                self.start_cycle()
-                self.call_scroll_bar('<<ListboxSelect>>')
-            elif self.ED.get():
-                for i in self.weekDays[:7]:
-                    self.open_for_save(i, time, text, 'ed')
-                showinfo('Сохранено', 'Запись создана')
-                self.start_cycle()
-                self.call_scroll_bar('<<ListboxSelect>>')
-            else:
-                self.open_for_save(day, time, text)
-                showinfo('Сохранено', 'Запись создана')
-                self.start_cycle()
-                self.call_scroll_bar('<<ListboxSelect>>')
+            try:
+                time_int = int(time)
+                if self.EW.get():
+                    self.open_for_save(day, time, text, 'ew')
+                    showinfo('Сохранено', 'Запись создана')
+                    self.start_cycle()
+                    self.call_scroll_bar('<<ListboxSelect>>')
+                elif self.ED.get():
+                    for i in self.weekDays[:7]:
+                        self.open_for_save(i, time, text, 'ed')
+                    showinfo('Сохранено', 'Запись создана')
+                    self.start_cycle()
+                    self.call_scroll_bar('<<ListboxSelect>>')
+                else:
+                    self.open_for_save(day, time, text)
+                    showinfo('Сохранено', 'Запись создана')
+                    self.start_cycle()
+                    self.call_scroll_bar('<<ListboxSelect>>')
+            except:
+                showerror('Error', 'Не верный формат времени')
         else:
             showerror('Error', 'Не верный формат времени')
 
@@ -131,7 +136,7 @@ class Day:
                 self.check_EW.deselect()
                 self.check_ED.select()
         else:
-            file = open(r'C:\Users\gemen\OneDrive\Рабочий стол\Ежедненвик\{d}\{t}.txt'.format(d=self.comDay.get(),t=str(selected_time[:2] + selected_time[3:5])))
+            file = open(r'C:\Users\gemen\OneDrive\Рабочий стол\Ежедненвик\{d}\{t}.txt'.format(d=self.comDay.get(), t=str(selected_time[:2] + selected_time[3:5])))
             self.check_EW.deselect()
             self.check_ED.deselect()
         self.text_d.delete(1.0, END)
@@ -151,7 +156,7 @@ class Day:
             else:
                 file_scroll.append(f'{i[:2]}:{i[2:4]}')
         file_scroll_var = StringVar(value=file_scroll)
-        self.listbox = Listbox(self.frame_2, listvariable=file_scroll_var)
+        self.listbox = Listbox(self.frame_2, height=7, listvariable=file_scroll_var)
         self.listbox.grid(row=0, column=1)
         self.listbox.bind('<<ListboxSelect>>', self.listbox_call)
 
@@ -160,7 +165,7 @@ class Day:
 
     def call_scroll_bar(self, event):
         [child.destroy() for child in self.frame_2.winfo_children()]
-        self.creat_scroll()
+        self.creat_frame_2()
 
     def deselect_ED(self):
         self.check_ED.deselect()
@@ -171,6 +176,38 @@ class Day:
     def start_cycle(self):
         thread_day = Thread(target=self.day_cycle)
         thread_day.start()
+
+    def dell_save(self):
+        selected_imdices = self.listbox.curselection()
+        selected_time = ','.join([self.listbox.get(i) for i in selected_imdices])
+        if len(selected_time) > 5:
+            if selected_time[9] == 'н':
+                os.remove(r'C:\Users\gemen\OneDrive\Рабочий стол\Ежедненвик\{d}\{t}ew.txt'.format(d=self.comDay.get(),
+                                                                                                  t=str(selected_time[
+                                                                                                        :2] + selected_time[
+                                                                                                              3:5])))
+                self.check_ED.deselect()
+                self.check_EW.deselect()
+            elif selected_time[9] == 'д':
+                os.remove(r'C:\Users\gemen\OneDrive\Рабочий стол\Ежедненвик\{d}\{t}ed.txt'.format(d=self.comDay.get(),
+                                                                                                  t=str(selected_time[
+                                                                                                        :2] + selected_time[
+                                                                                                              3:5])))
+                self.check_EW.deselect()
+                self.check_ED.deselect()
+        else:
+            os.remove(r'C:\Users\gemen\OneDrive\Рабочий стол\Ежедненвик\{d}\{t}.txt'.format(d=self.comDay.get(),t=str(selected_time[:2] + selected_time[3:5])))
+            self.check_EW.deselect()
+            self.check_ED.deselect()
+        [child.destroy() for child in self.frame_2.winfo_children()]
+        self.creat_frame_2()
+
+    def creat_frame_2(self):
+
+        self.creat_scroll()
+
+        self.but_del = Button(self.frame_2, text='Удалить', command=self.dell_save)
+        self.but_del.grid(row=2, column=1)
 
     def creat_widgets(self):
         self.frame_1 = Frame(self.root)
@@ -202,7 +239,7 @@ class Day:
         self.frame_2 = LabelFrame(self.root, text='Запланировано')
         self.frame_2.grid(row=1, column=2)
 
-        self.creat_scroll()
+        self.creat_frame_2()
 
     def start(self):
         self.start_cycle()
